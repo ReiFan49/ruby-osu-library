@@ -1,0 +1,9 @@
+# building a gem
+/Gemfile.lock
+
+# linux swaps
+~*
+*.swp
+
+# npm memes
+node_modules/
