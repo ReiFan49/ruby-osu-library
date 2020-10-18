@@ -7,3 +7,5 @@
 
 # npm memes
 node_modules/
+
+.yardoc/
