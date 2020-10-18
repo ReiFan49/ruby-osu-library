@@ -32,23 +32,43 @@ module OsuRuby
       end
       def version!; @version = GAME_VERSION; end
       def read_file(file = nil)
-        @file = file unless file.nil?
-        io = IO::DotNetIO.new(File.open(@file,'rb'))
+        need_close = true
+        case file
+        when nil
+          io = IO::DotNetIO.new(File.open(@file,'rb'))
+        when String
+          @file = file
+          io = IO::DotNetIO.new(File.open(@file,'rb'))
+        when ::IO
+          io = IO::DotNetIO.new(file)
+          need_close = false
+        end
         @version = io.read_signed_long
         read_content(io)
         io&.eof?
       ensure
-        io.close
+        io.close if need_close
       end
       def write_to_file(file = nil)
-        orig_file, @file = @file, file unless file.nil?
-        io = File.open(@file,'wb')
+        need_close = true
+        need_revert = false
+        case file
+        when nil
+          io = IO::DotNetIO.new(File.open(@file,'wb'))
+        when String
+          orig_file, @file = @file, file
+          io = IO::DotNetIO.new(File.open(@file,'wb'))
+          need_revert = true
+        when ::IO
+          io = IO::DotNetIO.new(file)
+          need_close = false
+        end
         io.write_signed_long(@version)
         write_content(io)
         true
       ensure
-        io.close
-        @file = orig_file unless file.nil?
+        io.close if need_close
+        @file = orig_file if need_revert
       end
       private
       abstract_method :read_content
@@ -125,6 +145,7 @@ module OsuRuby
       }
       # extra footer addition (useful for offline locks)
       VERSION_FLAG_CACHE = 20141028
+      attr_reader :map_list
       private
       def read_content(io)
         read_header(io)
@@ -137,6 +158,10 @@ module OsuRuby
           @acc_status  = io.read_boolean
           @acc_time    = io.read_dotnet_time
           @player_name = io.read_dotnet_osu_string
+        else
+          @acc_status  = true
+          @acc_time    = Time.at(0)
+          @player_name = ENV['USERNAME']
         end
       end
       def read_beatmaps(io)
@@ -162,7 +187,7 @@ module OsuRuby
           struct.store 'FileMap', io.read_dotnet_osu_string
           struct.store 'Submission', io.read_byte
           %w(Circle Slider Spinner).each do |k|
-            struct.store "Count#{k}", io.read_short
+            struct.store "Count#{k}", io.read_signed_short
           end
           struct.store 'MTime', io.read_dotnet_time
           diff_key = %w(HP CS OD)
@@ -175,7 +200,7 @@ module OsuRuby
             end
           end
           struct.store 'SV', io.read_double
-          struct.store 'DifficultyCache', read_difficulty(io)
+          struct.store 'DifficultyCache', read_difficulty_dictionary(io)
           struct.store 'TimeDrain', io.read_long
           struct.store 'TimeTotal', io.read_long
           struct.store 'TimePreview', io.read_long
@@ -198,7 +223,7 @@ module OsuRuby
           struct.store 'Unplayed', io.read_boolean
           struct.store 'LastPlay', io.read_dotnet_time
           struct.store 'osz2', io.read_boolean
-          struct.store 'FolderPath', io.read_string
+          struct.store 'FolderPath', io.read_dotnet_osu_string
           struct.store 'LastCheck', io.read_dotnet_time
           if @version > VERSION_PERSET then
             struct.store 'IgnoreHS', io.read_boolean
@@ -212,7 +237,7 @@ module OsuRuby
             if @version >= VERSION_PERSET_OVERRIDE then
               struct.store 'IgnoreVisual', io.read_boolean
             else
-              struct.store 'IgnoreVisual', struct.values_at('IgnoreSkin','IgnoreSB','IgnoreVideo').inject(:|,false)
+              struct.store 'IgnoreVisual', struct.values_at('IgnoreSkin','IgnoreSB','IgnoreVideo').inject(false,:|)
             end
             if @version <  VERSION_PERSET_NO_DIM then
               struct.store 'DimRate', io.read_short
@@ -221,7 +246,9 @@ module OsuRuby
           if @version > VERSION_EDITOR_TIME then
             struct.store 'EditorTime', io.read_long
           end
-          struct.store 'ManiaSpeed', io.read_byte
+          if @version >= VERSION_MODE_MANIA then
+            struct.store 'ManiaSpeed', io.read_byte
+          end
           struct
         end.tap do |ary| @map_list.concat(ary) end
       end
@@ -232,7 +259,7 @@ module OsuRuby
       #
       # So apparently there are several checkers to load the counter.
       # - Does the version support difficulty rating cache?
-      # - Does the  version uses Enum/Flags implementation on it?
+      # - Does the version uses Enum/Flags implementation on it?
       # - Does the version uses
       def read_difficulty_dictionary(io)
         difficulty = BASE_MODES.map do |m| [m, []] end.to_h
@@ -279,6 +306,8 @@ module OsuRuby
       def read_footer(io)
         if @version >= VERSION_FLAG_CACHE then
           @acc_role = io.read_long
+        else
+          @acc_role = 0
         end
       end
       def write_content(io)
@@ -294,17 +323,112 @@ module OsuRuby
           io.write_dotnet_osu_string @player_name
         end
       end
+      def determine_struct_bytes(io, struct)
+        struct = struct.dup
+        type = struct.delete(:_type)
+        case type
+        when 'Beatmap'
+          io.write_dotnet_osu_string struct.delete('Artist')
+          if @version >= VERSION_UNICODE then
+            io.write_dotnet_osu_string struct.delete('ArtistUnicode')
+          end
+          io.write_dotnet_osu_string struct.delete('Title')
+          if @version >= VERSION_UNICODE then
+            io.write_dotnet_osu_string struct.delete('TitleUnicode')
+          end
+          io.write_dotnet_osu_string struct.delete('Creator')
+          io.write_dotnet_osu_string struct.delete('Difficulty')
+          io.write_dotnet_osu_string struct.delete('FileSong')
+          io.write_dotnet_osu_string struct.delete('MD5')
+          io.write_dotnet_osu_string struct.delete('FileMap')
+          io.write_byte struct.delete('Submission')
+          %w(Circle Slider Spinner).each do |k|
+            io.write_signed_short struct.fetch("Count#{k}")
+          end
+          io.write_dotnet_time struct.delete('MTime')
+          diff_key = %w(HP CS OD)
+          diff_key.unshift('AR') if @version >= VERSION_DIFFICULTY_STORE_AR
+          diff_key.each do |k|
+            if @version >= VERSION_DIFFICULTY_PRECISE then
+              io.write_single struct.delete(k)
+            else
+              io.write_byte struct.delete(k)
+            end
+          end
+          io.write_double struct.delete('SV')
+          write_difficulty_dictionary(io, struct.delete('DifficultyCache'))
+          io.write_long struct.delete('TimeDrain')
+          io.write_long struct.delete('TimeTotal')
+          io.write_long struct.delete('TimePreview')
+          write_timing(io, struct.delete('TimingPoints'))
+          io.write_long struct.delete('IDMap')
+          io.write_long struct.delete('IDMapset')
+          io.write_long struct.delete('IDThread')
+          struct.delete('Ranking').tap do |array|
+            size = 3
+            if @version >= VERSION_MODE_MANIA then
+              size = 4
+            end
+            array.fill(0, array.size, size - array.size).slice!(size..-1)
+          end.each do |rank|
+            io.write_byte rank
+          end
+          io.write_signed_short struct.delete('OffsetLocal')
+          io.write_single struct.delete('Stack')
+          io.write_byte struct.delete('Mode')
+          io.write_dotnet_osu_string struct.delete('Source')
+          io.write_dotnet_osu_string struct.delete('Tags')
+          io.write_signed_short struct.delete('OffsetGlobal')
+          io.write_dotnet_osu_string struct.delete('Font')
+          io.write_boolean struct.delete('Unplayed')
+          io.write_dotnet_time struct.delete('LastPlay')
+          io.write_boolean struct.delete('osz2')
+          io.write_dotnet_osu_string struct.delete('FolderPath')
+          io.write_dotnet_time struct.delete('LastCheck')
+          if @version > VERSION_PERSET then
+            io.write_boolean struct.delete('IgnoreHS')
+            io.write_boolean struct.delete('IgnoreSkin')
+            io.write_boolean struct.delete('IgnoreSB')
+            if @version >= VERSION_PERSET_VIDEO then
+              io.write_boolean struct.delete('IgnoreVideo')
+            end
+            if @version >= VERSION_PERSET_OVERRIDE then
+              io.write_boolean struct.delete('IgnoreVisual')
+            end
+            if @version < VERSION_PERSET_NO_DIM then
+              io.write_short struct.delete('DimRate')
+            end
+          end
+          if @version > VERSION_EDITOR_TIME then
+            io.write_long struct.delete('EditorTime')
+          end
+          if @version >= VERSION_MODE_MANIA then
+            io.write_byte struct.delete('ManiaSpeed')
+          end
+        when 'DifficultyRating'
+          io.write_expect(8, struct.delete('Mods'), 13, struct.delete('Rating'))
+        when 'TimingPoints'
+          io.write_double struct.delete('BPM')
+          io.write_double struct.delete('Offset')
+          io.write_boolean struct.delete('Toggle')
+        end
+        struct.clear
+      end
       def write_beatmaps(io)
-        write_structs(io, @map_list) do |
-        io.write_signed_long @map_list.size
-        @map_list.each do |struct|
+        write_structs(io, @map_list)
+      end
+      def write_difficulty_dictionary(io, list)
+        if @version >= VERSION_DIFFICULTY_CACHE then
+          BASE_MODES.each do |m|
+            write_difficulty_star(io, list[m])
+          end
         end
       end
-      def write_difficulty_dictionary(io)
+      def write_difficulty_star(io, item)
+        write_structs(io, item)
       end
-      def write_difficulty_star(io)
-      end
-      def write_timing(io)
+      def write_timing(io, list)
+        write_structs(io, list)
       end
       def write_footer(io)
         if @version >= VERSION_FLAG_CACHE then
