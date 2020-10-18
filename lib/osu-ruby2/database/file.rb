@@ -143,6 +143,9 @@ module OsuRuby
       	fruits: 20141123,
       	mania:  20150110
       }
+      # this is a temporary number. anyone who knows it pls help
+      # even 2012 DB is compatible thanks to this :asahiGa:
+      VERSION_BEATMAP_SIZE = 20150817..20191106
       # extra footer addition (useful for offline locks)
       VERSION_FLAG_CACHE = 20141028
       attr_reader :map_list
@@ -168,6 +171,9 @@ module OsuRuby
         (@map_list = []).clear
         read_structs(io) do
           struct = {_type: 'Beatmap'}
+          if VERSION_BEATMAP_SIZE.include? @version then
+            struct.store 'FileSize', io.read_signed_long
+          end
           struct.store 'Artist', io.read_dotnet_osu_string
           if @version >= VERSION_UNICODE then
             struct.store 'ArtistUnicode', io.read_dotnet_osu_string
@@ -328,6 +334,9 @@ module OsuRuby
         type = struct.delete(:_type)
         case type
         when 'Beatmap'
+          if VERSION_BEATMAP_SIZE.include? @version then
+            io.write_signed_long struct.delete('FileSize')
+          end
           io.write_dotnet_osu_string struct.delete('Artist')
           if @version >= VERSION_UNICODE then
             io.write_dotnet_osu_string struct.delete('ArtistUnicode')
