@@ -8,4 +8,8 @@
 # npm memes
 node_modules/
 
+# yard
 .yardoc/
+
+# test
+tests/**/*.db
