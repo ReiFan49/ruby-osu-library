@@ -1,36 +1,49 @@
 require 'osu-ruby2/io/dotnet'
 module OsuRuby
   module Database
-    # @api private
+    # @abstract This is base of database reading.
+    #   Please understand this page were meant for developers of this library.
+    #   But you can try understanding this part for other references.
     #
-    # This is base of database reading.
-    # Please understand this page were meant for developers of this library.
-    # But you can try understanding this part for other references.
+    #   First of all, this database must be used with care. I only provide references
+    #   or personal data fixes. I do not condone cheating in osu!, please understand.
+    #   Any misconducts that is done by using this library, I nor the devs, do not give
+    #   consent for doing so.
     #
-    # First of all, this database must be used with care. I only provide references
-    # or personal data fixes. I do not condone cheating in osu!, please understand.
-    # Any misconducts that is done by using this library, I nor the devs, do not give
-    # consent for doing so.
+    #   Second, for any changes that happens within osu! database file itself
+    #   they may not be noted in here due to some reasons. If any of you wanted to
+    #   fill out the blankness from any version range, feel free to let me know.
     #
-    # Second, for any changes that happens within osu! database file itself
-    # they may not be noted in here due to some reasons. If any of you wanted to
-    # fill out the blankness from any version range, feel free to let me know.
+    #   Please do not use :send commands to invoke those privates, because they are part of
+    #   private API. They are not meant to return value, being used outside :read_file
+    #   or :write_to_file function.
     #
-    # Please do not use :send commands to invoke those privates, because they are part of
-    # private API. They are not meant to return value, being used outside :read_file
-    # or :write_to_file function.
-    #
-    # Data structure itself are build by peppy and his dev team.
+    #   Data structure itself are build by peppy and his dev team.
     class BaseDB
       include Interface::AbstractClass
       self.abstract!
+      # Represents database version
       attr_reader :version
+      # Instantiate a simple skeleton
       def initialize(file = nil)
         super
         @version = 0
         @file = file
       end
+      # Enforces the database version to the library-supported one.
+      # @return [void]
       def version!; @version = GAME_VERSION; end
+      # Read from source
+      # @overload read_file()
+      #   Opens a previously assigned filename database. Closes IO after use.
+      # @overload read_file(io)
+      #   Reads from existing IO object. Using this will not close the IO aftermath.
+      #   @param io [::IO] any IO object (meant for StringIO but others sure)
+      # @overload read_file(filename)
+      #   Opens an existing database. This will change the internal filename pointer.
+      #   Closes IO after use.
+      #   @param filename [String] a representation of a filename
+      # @return [Boolean] EOF-check
       def read_file(file = nil)
         need_close = true
         case file
@@ -49,6 +62,17 @@ module OsuRuby
       ensure
         io.close if need_close
       end
+      # Write database to destination
+      # @overload write_to_file()
+      #   Writes to previously assigned filename database. Closes IO after use.
+      # @overload write_to_file(io)
+      #   Writes existing IO object. Using this will not close the IO aftermath.
+      #   @param io [::IO] any IO object (meant for StringIO but others sure)
+      # @overload write_to_file(filename)
+      #   Writes into a new database. This will +not+ change the internal filename pointer.
+      #   Closes IO after use.
+      #   @param filename [String] a representation of a filename
+      # @return [void]
       def write_to_file(file = nil)
         need_close = true
         need_revert = false
@@ -99,10 +123,13 @@ module OsuRuby
       end
       abstract_method :determine_struct_bytes
       public
+      # @return [String]
       def inspect
         "<#{self.class.name}>"
       end
       class << self
+        # Loads the database from the file directly
+        # @return [BaseDB]
         def load(file)
           db = new(file)
           db.read_file
@@ -110,7 +137,7 @@ module OsuRuby
         end
       end
     end
-    # osu database
+    # osu! database
     class OsuDB < BaseDB
       # osu v10 in general
       VERSION_UNICODE = 20121008
