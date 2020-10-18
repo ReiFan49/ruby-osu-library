@@ -1,5 +1,5 @@
 module OsuRuby
-  BASE_MDOES = %i(osu taiko fruits mania).freeze
+  BASE_MODES = %i(osu taiko fruits mania).freeze
   class << self
     private
     def safe_glob(dir,*args,**kwargs,&block)
@@ -25,3 +25,4 @@ module OsuRuby
     end
   end
 end
+require 'osu-ruby2/version'

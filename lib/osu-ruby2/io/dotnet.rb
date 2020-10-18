@@ -9,8 +9,8 @@ module OsuRuby
         return ''.b if n == 0
         s = pos
         b = read(n)
-        self.pos = s
         if b.size != n then
+          self.pos = s
           fail EOFError, "Not enough bytes received. (#{b.size} instead of #{n})"
         else
           b
@@ -32,6 +32,12 @@ module OsuRuby
             ret = _confirm_peek(byte).unpack(sprintf("%s%s%d",s ? f.downcase : f,i.nonzero? ? '<' : '',n))
             ret.size == 1 ? ret.first : ret
           end
+          define_method :"read_#{s ? 's' : 'u'}#{byte << 3}" do
+            send(name)
+          end
+          define_method :"read_#{s ? 'int' : 'uint'}#{byte << 3}" do
+            send(name)
+          end
         end
       end
       [[:single,'e'],[:double,'E']].each_with_index do |(c,f),i|
@@ -39,7 +45,7 @@ module OsuRuby
         byte = 4 << i
         define_method "read_#{c}" do
           ret = _confirm_peek(byte).unpack(
-            sprintf("%s%d",c,n)
+            sprintf("%s%d",f,n)
           )
           ret.size == 1 ? ret.first : ret
         end
@@ -59,7 +65,7 @@ module OsuRuby
         when 0; return nil
         end
         size = read_uleb128
-        read_chars(size).encode('utf-8')
+        read_char(size).force_encoding('utf-8')
       end
       def read_dotnet_decimal
         Database::Datatype::Decimal.read_bytes(*Array.new(4) { read_long })
@@ -117,7 +123,13 @@ module OsuRuby
           byte = 1 << i
           n = 1
           define_method name do |num|
-            write([num].pack(sprintf("%s<%d",s ? f.downcase : f,n)))
+            write([num].pack(sprintf("%s%s%d",s ? f.downcase : f,i > 0 ? '<' : '',n)))
+          end
+          define_method :"write_#{s ? 's' : 'u'}#{byte << 3}" do |num|
+            send(name, num)
+          end
+          define_method :"write_#{s ? 'int' : 'uint'}#{byte << 3}" do |num|
+            send(name, num)
           end
         end
       end
@@ -125,7 +137,7 @@ module OsuRuby
         n = 1
         byte = 4 << i
         define_method "write_#{c}" do |num|
-          write([num].pack(sprintf("%s%d",c,n)))
+          write([num].pack(sprintf("%s%d",f,n)))
         end
       end
       def write_uleb128(num)
@@ -144,7 +156,7 @@ module OsuRuby
         write(dec.to_bytes)
       end
       def write_dotnet_time(time)
-        write(Database::Datatype::Time.decode(time))
+        write(Database::Datatype::Time.encode(time))
       end
       def write_dotnet_serializer(obj)
         fail NotImplementedError
@@ -156,6 +168,9 @@ module OsuRuby
       def write_byte_array(ary)
         write_signed_long(ary.size)
         write(ary.pack('C*'))
+      end
+      def write_osu_type(type, content)
+        write_expect(type, content)
       end
       def write_expect(*codes)
         fail ArgumentError, "requires at least 1 argument" if codes.empty?
