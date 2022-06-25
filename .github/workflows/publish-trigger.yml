@@ -16,7 +16,7 @@ jobs:
       with:
         filters: |
           ruby:
-            - 'lib/**.rb'
+            - 'lib/**/*.rb'
             - '.rubocop.yml'
   send-trigger:
     needs: changes
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby-version: [ 2.7.x, 2.6.x, 2.5.x, 2.4.x ]
+        ruby-version: [ 2.7, 2.6, 2.5, 2.4 ]
     name: Lint Source Code
     steps:
     - uses: actions/checkout@v2

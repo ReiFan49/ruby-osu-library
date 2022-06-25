@@ -1,6 +1,14 @@
 module OsuRuby
   module Interface
     module MultiplexerInterface
+      # upon extended to an interface, the interface perform following actions
+      #   when included:
+      #
+      # * include any methods from +I+ class.
+      # * extend any methods from +X+ class.
+      #
+      # this allows module inclusion to be more cleaner like
+      # @see Rails' Concerns
       def self.extended(cls)
         cls.send :private_constant, :I
         cls.send :private_constant, :X
@@ -13,5 +21,9 @@ module OsuRuby
       end
     end
     private_constant :MultiplexerInterface
+    # @!visibility public
+    # @api private
+    # interface that defines instantenous include and extend upon +include+.
+    module MultiplexerInterface; end
   end
 end

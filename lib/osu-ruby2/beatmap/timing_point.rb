@@ -25,7 +25,7 @@ module OsuRuby
         #   @abstract a raw value of timing section
         #   @return [Float]
         abstract_method :value
-        # @!method value=
+        # @!method value=(new_value)
         #   @abstract a raw value of timing section
         #   @param new_value [Numeric] depends on implementation
         #   @return [void]

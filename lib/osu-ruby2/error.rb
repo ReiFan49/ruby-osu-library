@@ -1,5 +1,5 @@
 module OsuRuby
-  # module to define gem-specific errors
+  # collections of gem-specific errors
   module Error
     # There's no need to define anything in here.
     # please define it on other files instead.

@@ -13,6 +13,7 @@ module OsuRuby
   module Beatmap
     # Three-pair tuple that is used for most of osu! difficulty related scaling.
     DifficultyProgress = Struct.new(:low, :mid, :high) do
+      # create immutable tuple.
       def intiialize(*args)
         super
         freeze
@@ -34,7 +35,7 @@ module OsuRuby
         end
       end
       # retrieve the +original_value+ on given +difficulty_value+
-      # @param value [Numeric] reference value to compare with {{#low}}, {{#mid}}, and {{#high}}.
+      # @param value [Numeric] reference value to compare with {#low}, {#mid}, and {#high}.
       # @return [Numeric] projected +priginal_value+ from given +difficulty_value+
       # @see #obtain to compare returned +original_value+ with.
       def approach(value)

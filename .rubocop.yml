@@ -324,7 +324,7 @@ Style/NumericLiterals:
   Enabled: false
 Style/NumericPredicate:
   Severity: warning
-  Enabled: true
+  Enabled: false
 Style/ParallelAssignment:
   Enabled: true
 Style/ParenthesesAroundCondition:
@@ -422,5 +422,3 @@ Style/ZeroLengthPredicate:
 Layout/LineLength:
   Severity: convention
   Max: 144
-Style/NumericPredicate:
-  Enabled: false 
