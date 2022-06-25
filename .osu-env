@@ -1,0 +1,8 @@
+DIST = false
+OSUM = false
+DEBUG = false
+STREAM_DEBUG = false
+NO_ENCRYPTION = false
+SAFE_ENCRYPTION = false
+STRONG_ENCRYPTION = false
+P2P = false

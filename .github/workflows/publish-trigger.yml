@@ -1,0 +1,52 @@
+name: Publish and Lint
+on:
+  push:
+    branches: [ master ]
+jobs:
+  # JOB to run change detection
+  changes:
+    runs-on: ubuntu-latest
+    # Set job outputs to values from filter step
+    outputs:
+      ruby: ${{ steps.filter.outputs.ruby }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          ruby:
+            - 'lib/**.rb'
+            - '.rubocop.yml'
+  send-trigger:
+    needs: changes
+    if: ${{ needs.changes.outputs.ruby == 'true' }}
+    runs-on: ubuntu-latest
+    name: Send Publish Trigger
+    steps:
+    - name: Send update-gem Dispatch
+      run: |
+        curl -X POST -u "${{github.actor}}:${{secrets.TRIGGER_TOKEN}}" \
+          -H "Accept: application/vnd.github.everest-preview+json" \
+          -H "Content-Type: application/json" \
+          https://api.github.com/repos/ReiFan49/bloom-ruby-doc/dispatches \
+          --data '{"event_type": "update-gem"}'
+  lint:
+    needs: changes
+    if: ${{ needs.changes.outputs.ruby == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby-version: [ 2.7.x, 2.6.x, 2.5.x, 2.4.x ]
+    name: Lint Source Code
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        bundler-cache: true
+        ruby-version: ${{ matrix.ruby-version }}
+    - name: Install Dependencies
+      run: bundle install
+    - name: Rubocop Lint
+      run: rubocop

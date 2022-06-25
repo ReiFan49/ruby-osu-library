@@ -30,7 +30,8 @@ describe OsuRuby::Database::OsuDB do
     new_fn = File.join(__dir__,'ruby.osu!.20121227.db')
     db.write_to_file(new_fn)
     _(File.size(fn)).must_equal File.size(new_fn)
-    File.unlink(new_fn)
+  ensure
+    File.unlink(new_fn) rescue 0
   end
   it 'writes migrated 2012 database' do
     fn = File.join(__dir__,'osu!.20121227.db')
@@ -41,6 +42,7 @@ describe OsuRuby::Database::OsuDB do
     db.version!
     db.write_to_file(new_fn)
     _(File.exists?(new_fn)).must_equal true
-    File.unlink(new_fn)
+  ensure
+    File.unlink(new_fn) rescue 0
   end
 end

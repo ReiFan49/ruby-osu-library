@@ -1,31 +1,48 @@
 module OsuRuby::Database
   module Datatype
+    # a simple wrapper for a Psuedo-class system to encode data back and forth.
+    # @api private
+    # @note Anything what you see in here is merely a generated value.
+    #   Please consult the source code for what you want to see.
     class Converter
+      # @!visibility private
       def initialize(name, enc, dec)
         @name    = name
         @encoder = enc
         @decoder = dec
         freeze
       end
+      # convert to "STRING"
       def encode(x)
-        # convert to "STRING"
         @encoder.call(x)
       end
+      # convert to given data
       def decode(x)
-        # convert to given data
         @decoder.call(x)
       end
+      # @!visibility private
       def name; @name; end
+      # @!visibility private
       def inspect; "<Class:#{self.name}>"; end
+      # @!visibility private
       def to_s; @name; end
       class << self
+        # registers the name into the Datatype namespace with both encoding and decoding support
+        # @!macro [attach] Converter.create
+        #   @!parse $1 = Converter.new(${1-3})
+        # @return [Converter] psuedo-class
         def create(name, enc, dec)
+          mod = Module.nesting[-2]
+          if mod.const_defined?(name,false) && !(Converter === mod.const_get(name,false)) then
+            fail ArgumentError, "Cannot overwrite a non-Converter object"
+          end
           cls = new(name, enc, dec)
-          Module.nesting[-2].const_set(name, cls)
+          mod.const_set(name, cls)
           cls
         end
       end
     end
+    # @macro Converter.create
     Converter.create('ULEB128', proc { |x|
       bytes = []
       loop do
@@ -47,6 +64,7 @@ module OsuRuby::Database
       end
       result
     })
+    # @macro Converter.create
     Converter.create('Time', proc { |t|
       [621355968000000000 + (10000000 * t.to_f).to_i].pack('Q<')
     }, proc { |s|
@@ -62,6 +80,8 @@ module OsuRuby::Database
           super([value].pack('L<').unpack('l<').first)
         end
       end
+      # splits integral and decimal part
+      # @return [(Integer, Integer)] pair of integer
       def split
         sign_flag  = (flags & 0x80000000).zero? ? 0 : -1
         scale_flag = (flags & 0x00ff0000) >> 16
@@ -70,29 +90,49 @@ module OsuRuby::Database
         final_val  = num_value / scale_val
         [final_val.to_i, (final_val * scale_val).to_i]
       end
+      # Converts the struct into 16-bytes of string.
+      # @return [String]
       def to_bytes
         [low, med, hi, flags].pack("L<4")
       end
+      # @return [Float]
       def to_f
         to_s.to_f
       end
+      # @return [BigDecimal]
       def to_d
-        BigDecimal.new(to_s)
+        require 'bigdecimal'
+        BigDecimal(to_s)
       end
+      # @return [Integer]
       def to_i; to_int; end
+      # @return [Integer]
       def to_int
         split.first
       end
+      # @return [Rational]
       def to_r
         Rational(to_s)
       end
+      # @return [String]
       def to_s
         split.join('.')
       end
       class << self
+        # reads back the byte format that is created through #to_bytes
+        # @param string [String] 16-bytes of string
+        # @return [Decimal]
         def read_bytes(string)
           new(*string.unpack('l<'))
         end
+        # @overload try_convert(value)
+        #   @param value [String] string that need to be split upon.
+        # @overload try_convert(value)
+        #   @param value [Float, Rational] convert to string of float-form
+        # @overload try_convert(value)
+        #   @param value [Integer]
+        # @raise [ArgumentError] failed convert attempt
+        # @return [Decimal]
         def try_convert(value)
           ary = []
           bits = [0, 0, 0]
@@ -101,7 +141,7 @@ module OsuRuby::Database
             ary.push *value.split('.')
             ary.map!(&:to_i)
           when Float, Rational
-            return try_convert(value.to_s)
+            return try_convert(value.to_f.to_s)
           when Integer
             ary.push value
           else

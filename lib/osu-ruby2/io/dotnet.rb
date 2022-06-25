@@ -6,8 +6,8 @@ module OsuRuby
     module AdvancedRead
       private
       def _confirm_peek(n=1)
-        fail ArgumentError, "expected to read byte(s)" if n < 0
-        return ''.b if n == 0
+        fail ArgumentError, "expected to read byte(s)" if n.negative?
+        return ''.b if n.zero?
         s = pos
         b = read(n)
         if b.size != n then
@@ -67,9 +67,7 @@ module OsuRuby
         n = 1
         byte = 4 << i
         define_method "read_#{c}" do
-          ret = _confirm_peek(byte).unpack(
-            sprintf("%s%d",f,n)
-          )
+          ret = _confirm_peek(byte).unpack(sprintf("%s%d",f,n))
           ret.size == 1 ? ret.first : ret
         end
       end
@@ -89,6 +87,9 @@ module OsuRuby
         case conf_flag
         when 0; return nil
         end
+        read_string
+      end
+      def read_string
         size = read_uleb128
         read_char(size).force_encoding('utf-8')
       end
@@ -100,7 +101,7 @@ module OsuRuby
       def read_dotnet_time
         Database::Datatype::Time.decode(read_char(8))
       end
-      # @raise [NotImplementedError]
+      # @raise [NotImplementedError] not supported.
       def read_dotnet_serializer
         fail NotImplementedError
       end
@@ -111,9 +112,22 @@ module OsuRuby
       # @return [Array<Integer>] bytes
       def read_byte_array
         size = read_signed_long
+        return if size < 0
         _confirm_peek(size).unpack("C#{size}")
       end
-      # @return [Boolean,Integer,String,Float,Database::Datatype::Decimal,Time,Array<Integer>,Object] depends on first byte
+      # read next object to reutrn
+      # @return [Boolean] (1) boolean
+      # @return [Integer] (2) (3) (4) (5) unsigned value
+      # @return [Integer] (6) (7) (8) (9) signed value
+      # @return [String] (10) single char
+      # @return [String] (11) osu! dotnet string
+      # @return [Float] (12) Single-Float
+      # @return [Float] (13) Double-Float
+      # @return [Database::Datatype::Decimal] (14) dotnet decimal
+      # @return [Time] (15) parsed dotnet time
+      # @return [Array<Integer>] (16) array of bytes
+      # @return [String] (17) array of chars
+      # @return [Object] unsupported.
       def read_osu_type
         case read_byte
         when  1; read_boolean
@@ -220,6 +234,9 @@ module OsuRuby
           return
         end
         write(11.chr)
+        write_string(str)
+      end
+      def write_string(str)
         write_uleb128(str.bytes.size)
         write(str.b)
       end
@@ -246,6 +263,10 @@ module OsuRuby
       # @param ary [Array<Integer>] array of bytes
       # @return [void]
       def write_byte_array(ary)
+        if ary.nil? then
+          write_signed_long(-1)
+          return
+        end
         write_signed_long(ary.size)
         write(ary.pack('C*'))
       end
@@ -315,6 +336,9 @@ module OsuRuby
         priv = false
         return @io.send(meth, *args, &block) if @io.respond_to?(meth, priv)
         super
+      end
+      def respond_to_missing?(meth, priv=false)
+        @io.respond_to?(meth, priv) || super
       end
     end
   end
