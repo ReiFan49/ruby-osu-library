@@ -24,6 +24,6 @@ Gem::Specification.new do |s|
   s.require_paths = %w(lib)
   s.files = Dir["lib/**/*.rb", "MIT-LICENSE", "Rakefile", "*.md"]
   
-  s.add_development_dependency 'rubocop', '~> 1.17'
+  s.add_development_dependency 'rubocop', '~> 1.17', '<= 1.28'
   s.add_dependency 'ruby-xz', '>= 1'
 end

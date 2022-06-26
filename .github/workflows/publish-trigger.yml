@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby-version: [ 2.7, 2.6, 2.5, 2.4 ]
+        ruby-version: [ 2.7, 2.6, 2.5 ]
     name: Lint Source Code
     steps:
     - uses: actions/checkout@v2
@@ -49,4 +49,4 @@ jobs:
     - name: Install Dependencies
       run: bundle install
     - name: Rubocop Lint
-      run: rubocop
+      run: bundle exec rubocop --display-only-fail-level-offenses -f g
