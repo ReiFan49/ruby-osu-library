@@ -2,7 +2,7 @@ module OsuRuby
   module Interface
     module MultiplexerInterface
       # upon extended to an interface, the interface perform following actions
-      #   when included:
+      # when included:
       #
       # * include any methods from +I+ class.
       # * extend any methods from +X+ class.

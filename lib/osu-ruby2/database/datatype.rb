@@ -2,8 +2,10 @@ module OsuRuby::Database
   module Datatype
     # a simple wrapper for a Psuedo-class system to encode data back and forth.
     # @api private
-    # @note Anything what you see in here is merely a generated value.
+    # @note Anything shown in here is merely a generated value.
     #   Please consult the source code for what you want to see.
+    # @note This class is instantly removed from direct references once finished
+    #   instantiation of its subclasses. Only used for references.
     class Converter
       # @!visibility private
       def initialize(name, enc, dec)
@@ -29,7 +31,7 @@ module OsuRuby::Database
       class << self
         # registers the name into the Datatype namespace with both encoding and decoding support
         # @!macro [attach] Converter.create
-        #   @!parse $1 = Converter.new(${1-3})
+        #   @!parse class $1 < Converter; encode = $2; decode = $3; end
         # @return [Converter] psuedo-class
         def create(name, enc, dec)
           mod = Module.nesting[-2]

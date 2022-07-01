@@ -6,9 +6,10 @@ module OsuRuby
       # @abstract Basic representation of Timing Points
       class Base
         extend Interface::AbstractClass
-        self.abstract!
         # 395930,800,6,2,0,60,1,0
         # 395930,-175,6,2,0,60,0,0
+        self.abstract!
+        # position of timingpoint object.
         attr_reader :time
         def initialize(time, value, measure = 4, sample = 1, custom = 0, volume = 70, type = 1, flags = 0)
           super
@@ -34,8 +35,14 @@ module OsuRuby
           define_method m do instance_variable_get(:"@#{m}") end unless instance_methods.include?(m)
           define_method :"#{m}=" do |new_value| instance_variable_set(:"@#{m}", new_value) end unless instance_methods.include?(:"#{m}=")
         end
+        # checks timing point flag 0th-bit
+        # @return [Boolean]
         def is_kiai?; !(@flags & (1<<0)).zero?; end
+        # checks timing point flag 3rd-bit
+        # @return [Boolean]
         def is_omit_bar?; !(@flags & (1<<3)).zero?; end
+        # checks timing point custom sample index usage
+        # @return [Boolean]
         def is_custom_sample?; @custom.positive?; end
         def as_osu
           [@time, @value, @measure, @sample, @custom, @volume, @type, @flags]
