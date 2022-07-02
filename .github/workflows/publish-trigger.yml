@@ -1,7 +1,6 @@
 name: Publish and Lint
 on:
   push:
-    branches: [ master ]
 jobs:
   # JOB to run change detection
   changes:
@@ -20,7 +19,11 @@ jobs:
             - '.rubocop.yml'
   send-trigger:
     needs: changes
-    if: ${{ needs.changes.outputs.ruby == 'true' }}
+    if: |
+      needs.changes.outputs.ruby == 'true' &&
+      github.event_name == 'push' &&
+      github.ref_type == 'branch' &&
+      github.ref_name == 'master'
     runs-on: ubuntu-latest
     name: Send Publish Trigger
     steps:
