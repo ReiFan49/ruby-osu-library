@@ -43,15 +43,17 @@ module OsuRuby
         def condition(str)
           nil
         end
-        # Subclass inheritance performs following actions:
+        # Method hook invoked upon inheritance.
+        #
+        # Performs following actions:
         #
         # * Automatically unmarks class as abstract. Unless defined again. (To be removed.)
-        # * Shadows {#determine} function into {#initialize}.
-        # * Alaases {#register_checker} function to use {Entry#register_checker} instead.
+        # * Shadows {.determine} function into {.initialize}.
+        # * Aliaases {.register_checker} function to use {Entry#register_checker} instead.
         # @return [void]
-        def inherit(cls)
+        def inherited(cls)
           super
-          cls.class_exec do
+          cls.instance_exec do
             def determine(str)
               new(str)
             end
@@ -73,14 +75,14 @@ module OsuRuby
         # @note this function is overridden on subclasses into an alias of +new+.
         # @return [Entry]
         def determine(str)
-          @_class_map.find do |cls|
+          entry = @_class_map.find do |cls|
             cls.condition(str)
-          end.tap do |entry|
-            if entry.nil? then
-              RawEntry.determine(str)
-            else
-              entry.determine(str)
-            end
+          end
+          
+          if entry.nil? then
+            RawEntry.determine(str)
+          else
+            entry.determine(str)
           end
         end
       end
@@ -94,9 +96,11 @@ module OsuRuby
       # original string without any special strings to be returned.
       # @return [String]
       attr_accessor :content
+      
       # store content within n parsing wrapper.
       # @param str [String]
       def initialize(str)
+        super
         @content = str
       end
       # @return [String] original content
@@ -137,9 +141,11 @@ module OsuRuby
       attr_accessor :key
       # @return [String]
       attr_accessor :value
+      
       # splits string into a key-value pair data.
       # @param str [String]
       def initialize(str)
+        super
         @key, @value = str.split(/\s*:\s*/,2)
       end
       # @return [String] key-value pair concatenated with colon
@@ -154,7 +160,7 @@ module OsuRuby
     end
     # @abstract This is an abstract class of Separator-Split Parser
     class SplitEntry < Entry
-      # Splits string based on class {#splitter}.
+      # Splits string based on class {.splitter}.
       # @param str [String]
       def initialize(str)
         super
@@ -185,7 +191,7 @@ module OsuRuby
       # @param key [Integer] index of the array
       # @param value [Object] value to be insereted. This value will be converted into a String.
       # @return [void]
-      def [](key, value)
+      def []=(key, value)
         @args[key] = _downcast(value)
       end
       # @return [String]
@@ -199,7 +205,9 @@ module OsuRuby
           case meth
           when :_upcast, :_downcast
             private meth
+            return
           end
+          super
         end
         # configures the class splitter.
         # @param sep [String] string separator.
@@ -240,22 +248,29 @@ module OsuRuby
       self.splitter = ','
     end
     # Bar-based (+|+) separator parser.
-    class BarSplitEntry < Entry
+    class BarSplitEntry < SplitEntry
       self.splitter = '|'
     end
     # Colon-based (+:+) separator parser.
-    class ColonSplitEntry < Entry
+    class ColonSplitEntry < SplitEntry
       self.splitter = ':'
     end
-  
+    
+    # A {Section} dictates a group of string line to be parsed using one {Entry} class parser.
     class Section
       @_entry = Entry
+      # @return [String] section name
       attr_accessor :name
+      # @return [Array<Entry>] parsed contents.
       attr_reader   :contents
+      
+      # @param name [String] section name
+      # @param str [String] piece of section to be parsed.
       def initialize(name, str)
         @name = name
-        @contents = str.split(/$/).map(&self.class.entry.method(:determine))
+        @contents = str.split(/$/).map(&:strip).map(&self.class.entry.method(:determine))
       end
+      # @return [String] section content converted into osu!-compatible string.
       def to_s
         sprintf("[%1$s]%2$s%3$s",
           @name, $/,
@@ -263,11 +278,16 @@ module OsuRuby
         )
       end
       class << self
+        # @return [Class<Entry>] entry class that represents the available parser.
         def entry
           @_entry
         end
+        # Upon inheriting, subclasses can use +#entry=+ function to configure
+        # the expected Entry class to parse the strings.
+        # @return [void]
         def inherited(cls)
-          cls.class_exec do
+          super
+          cls.instance_exec do
             def entry=(cls)
               fail TypeError, "expected cls is a class!" unless cls.is_a?(Class)
               fail TypeError, "expected cls to Entry class!" unless cls <= Entry
@@ -277,21 +297,36 @@ module OsuRuby
         end
       end
     end
+    # {Section} that uses only {RawEntry} parser.
     class RawSection < Section
       self.entry = RawEntry
     end
+    # {Section} that uses only {KeyEntry} parser.
     class KVSection < Section
       self.entry = KeyEntry
     end
+    # @todo work on this.
     class CommaSplitSection < Section
     end
-    class FileData < TextParser
+    # Implements basic ability to parse normal file.
+    class FileData < Base
+      # @return [Array<Section>] file sections.
       attr_reader :sections
-      def initialize(str)
-        parse_sections(str)
+      
+      # @param io [::IO] an IO object to read from.
+      def initialize(io)
+        super
+        parse
       end
-      def parse_sections(str)
+      def parse
+        @io.rewind
+        parse_sections
+      end
+      # parse whole file string and populate the {#sections} variable.
+      # @return [void]
+      def parse_sections
         (@sections ||= []).clear
+        str = @io.read
         raw_sections = []
         section_name = nil
         section_content = []
@@ -309,9 +344,13 @@ module OsuRuby
           end
         end
         raw_sections << [section_name, section_content]
-        raw_sections.each do |n,c|
-          @sections << Section.new(n, c.join($/))
+        raw_sections.each do |n, c|
+          @sections << determine_sections(n, c)
         end
+      end
+      private
+      def determine_sections(section_name, section_contents)
+        Section.new(section_name, section_contents.join($/))
       end
     end
   end
