@@ -309,24 +309,41 @@ module OsuRuby
     class CommaSplitSection < Section
     end
     # Implements basic ability to parse normal file.
-    class FileData < Base
+    #
+    # Parser Core uses 4 functionality to work.
+    #
+    # * *Reader*, text file to machine variables conversion. Uses {Section} and {Entry} to help.
+    # * *Writer*, machine variables to text file. Make a use of {Base#compile_contents} and {Section#to_s}.
+    # * *Transformer*, passing machine variables to other machine variables potentially changing its internals.
+    #   Simplified the usage through {#sections}
+    # * *Converter*, passes machine variables into Behavior specific container that accepts given variables. See {#convert}
+    class RawFile < Base
       # @return [Array<Section>] file sections.
       attr_reader :sections
       
-      # @param io [::IO] an IO object to read from.
-      def initialize(io)
+      def initialize
         super
-        parse
+        @sections = []
       end
-      def parse
-        @io.rewind
-        parse_sections
+      # parse given IO input to program editable contents
+      # @param io [#read] Readable IO stream to parse
+      # @return [void]
+      def parse(io)
+        io.rewind
+        parse_header io
+        parse_sections io
+      end
+      # parse file header if any
+      # @param io [#read] Readable IO stream to parse
+      # @return [void]
+      def parse_header(io)
       end
       # parse whole file string and populate the {#sections} variable.
+      # @param io [#read] Readable IO stream to parse
       # @return [void]
-      def parse_sections
-        (@sections ||= []).clear
-        str = @io.read
+      def parse_sections(io)
+        @sections.clear
+        str = io.read
         raw_sections = []
         section_name = nil
         section_content = []
@@ -351,6 +368,15 @@ module OsuRuby
       private
       def determine_sections(section_name, section_contents)
         Section.new(section_name, section_contents.join($/))
+      end
+      # @!visibility public
+      # @private
+      # converts parsed data into osu! readable text file.
+      # @return [String] osu! text file compatible string.
+      def compile_contents
+      end
+      
+      class << self
       end
     end
   end
