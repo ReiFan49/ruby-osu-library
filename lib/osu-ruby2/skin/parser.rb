@@ -27,7 +27,7 @@ module OsuRuby::Skin
     end
     # Detected osu!skin folder
     # @!attribute [r] skin_dir
-    # @return [String] actual osu!skin directory
+    # @return [String, nil] actual osu!skin directory
     # @raise [Error::SkinNotFoundError] if +skin.ini+ is not found until root
     #   directory.
     def skin_dir
@@ -56,10 +56,16 @@ module OsuRuby::Skin
     end
     # Obtain currently read skin file from +skin.ini+
     # @!attribute [r] skin_file
-    # @return [String]
+    # @return [String, nil]
     def skin_file
       return unless @skin_dir
       File.join(@skin_dir, FILE_NAME)
+    end
+    # retrieve available skin data.
+    # @!attribute [r] skin_data
+    # @return [Parser::FileData, nil]
+    def skin_data
+      @skin_data
     end
     # Parse +skin.ini+ file into program readable object.
     # @return [void]
