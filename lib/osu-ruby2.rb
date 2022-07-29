@@ -20,11 +20,11 @@ module OsuRuby
       @env.clear
       dirs = []
       add_dir = ->(dir){
-        dirs.push File.expand_path(File.join('.',OSU_ENV_FILE), dir)
+        dirs.push File.expand_path(File.join('.', OSU_ENV_FILE), dir)
       }
       [Dir.pwd].each do |preserved_dir|
         add_dir.call(preserved_dir)
-        add_dir.call(File.join('..',preserved_dir))
+        add_dir.call(File.join(preserved_dir, '..'))
       end
       # If somewhere inside home directory
       # recusrively add the tree
@@ -32,11 +32,14 @@ module OsuRuby
         cd = File.expand_path('../..',Dir.pwd)
         while cd != ENV['HOME'] && cd.start_with?(ENV['HOME'])
           add_dir.call(cd)
-          cd = File.expand_path('..',cd)
+          cd = File.join('..', cd)
         end
       end
       # add user home and gem directory
-      [ENV['HOME'], __dir__].each do |preserved_dir|
+      [
+        ENV['HOME'],
+        File.join('..', __dir__),
+      ].each do |preserved_dir|
         add_dir.call(preserved_dir)
       end
       dirs.uniq!
