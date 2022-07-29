@@ -20,7 +20,7 @@ module OsuRuby
         # obtain list of extensions defined for the class
         # @return [Array<Symbol>] list of extensions defined as symbol.
         def extensions
-          (self.superclass < ExtendableMethod ? self.superclass.extensions : []) | @_extensions
+          (self.superclass < ExtendableMethod ? self.superclass.extensions : []).to_a | @_extensions.to_a
         end
         # @overload extension_add(meth)
         #   appends extension to the queue
