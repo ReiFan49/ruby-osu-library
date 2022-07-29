@@ -66,12 +66,14 @@ module OsuRuby
     end
     # Represents Beatmap data in general.
     class Data
-      include Interface::ExtendableMethods
+      include Interface::ExtendableMethod
       extend Forwardable
       # TODO: define special section for parsing etc.
-      SPECIAL_SECTIONS   = %i(TimingPoints HitObjects).freeze
+      SPECIAL_SECTIONS    = %i(TimingPoints HitObjects).freeze
       # defines global spinner difficulty used through all main modes.
-      SPINNER_DIFFICULTY = DifficultyProgress.new(3.0,5.0,7.5)
+      SPINNER_DIFFICULTY  = DifficultyProgress.new(3.0,5.0,7.5)
+      # osu! beatmap latest version
+      LATEST_FILE_VERSION = 14
       
       def initialize
         @sections = {}
@@ -196,7 +198,7 @@ module OsuRuby
       # Note that this implement a very core of the object itself.
       # If you want to do a note specific, please see the implementation of subclasses
       class Base
-        include Interface::ExtendableMethods
+        include Interface::ExtendableMethod
         include Interface::AbstractClass
         attr_reader :x, :y, :start_time, :type, :hitsound
         def initialize(beatmap, pos_x, pos_y, start_time, note_type, hitsounds, *extras)
