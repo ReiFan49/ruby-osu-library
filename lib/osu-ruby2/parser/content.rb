@@ -220,6 +220,11 @@ module OsuRuby
         def splitter
           @splitter
         end
+        private
+        def inherited(cls)
+          super
+          cls.splitter = self.splitter
+        end
       end
       self.abstract!
     end
@@ -282,6 +287,12 @@ module OsuRuby
         def entry
           @_entry
         end
+        def create(entry_class, &block)
+          Class.new(self) do |cls|
+            self.entry = entry_class
+            self.class_exec(&block) if block_given?
+          end
+        end
         # Upon inheriting, subclasses can use +#entry=+ function to configure
         # the expected Entry class to parse the strings.
         # @return [void]
@@ -298,16 +309,9 @@ module OsuRuby
       end
     end
     # {Section} that uses only {RawEntry} parser.
-    class RawSection < Section
-      self.entry = RawEntry
-    end
+    RawSection = Section.create(RawEntry)
     # {Section} that uses only {KeyEntry} parser.
-    class KVSection < Section
-      self.entry = KeyEntry
-    end
-    # @todo work on this.
-    class CommaSplitSection < Section
-    end
+    KVSection = Section.create(RawEntry)
     # Implements basic ability to parse normal file.
     #
     # Parser Core uses 4 functionality to work.
