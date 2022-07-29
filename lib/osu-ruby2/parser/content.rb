@@ -167,7 +167,7 @@ module OsuRuby
         @args = str.split(self.class.splitter, -1)
       end
       private
-      def _upcast(val,key=nil)
+      def _upcast(val, key=nil)
         if val.nil? then
           ""
         else
@@ -366,8 +366,8 @@ module OsuRuby
         end
       end
       private
-      def determine_sections(section_name, section_contents)
-        Section.new(section_name, section_contents.join($/))
+      def determine_sections(name, contents)
+        Section.new(name, contents.join($/))
       end
       # @!visibility public
       # @private
