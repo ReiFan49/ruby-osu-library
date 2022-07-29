@@ -61,8 +61,8 @@ module OsuRuby
         # @return [Base]
         def load(fn)
           io = File.open(fn, 'r')
-          parser = new(io)
-          parser.parse
+          parser = new
+          parser.parse(io)
           parser
         ensure
           io.close
