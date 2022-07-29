@@ -53,7 +53,7 @@ module OsuRuby
           case match[2]
           when /^\d+$/; value = value.to_i
           when /^\d+[.]\d+$/; value = value.to_f
-          when /^true|false$/; value = value == true
+          when /^true|false$/; value = value == 'true'
           end
           @env.store(match[1].to_sym, value)
         end
