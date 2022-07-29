@@ -5,7 +5,7 @@ module OsuRuby
       KEY_METHODS = %i(time value measure sample custom volume flags)
       # @abstract Basic representation of Timing Points
       class Base
-        extend Interface::AbstractClass
+        include Interface::AbstractClass
         # 395930,800,6,2,0,60,1,0
         # 395930,-175,6,2,0,60,0,0
         self.abstract!
@@ -31,7 +31,7 @@ module OsuRuby
         #   @param new_value [Numeric] depends on implementation
         #   @return [void]
         abstract_method :value=
-        KEY_METHOD.each do |m|
+        KEY_METHODS.each do |m|
           define_method m do instance_variable_get(:"@#{m}") end unless instance_methods.include?(m)
           define_method :"#{m}=" do |new_value| instance_variable_set(:"@#{m}", new_value) end unless instance_methods.include?(:"#{m}=")
         end
