@@ -288,10 +288,11 @@ module OsuRuby
           @_entry
         end
         def create(entry_class, &block)
-          Class.new(self) do |cls|
+          cls = Class.new(self) do
             self.entry = entry_class
-            self.class_exec(&block) if block_given?
           end
+          cls.class_exec &block if block_given?
+          cls
         end
         # Upon inheriting, subclasses can use +#entry=+ function to configure
         # the expected Entry class to parse the strings.
@@ -311,7 +312,7 @@ module OsuRuby
     # {Section} that uses only {RawEntry} parser.
     RawSection = Section.create(RawEntry)
     # {Section} that uses only {KeyEntry} parser.
-    KVSection = Section.create(RawEntry)
+    KVSection = Section.create(KeyEntry)
     # Implements basic ability to parse normal file.
     #
     # Parser Core uses 4 functionality to work.
