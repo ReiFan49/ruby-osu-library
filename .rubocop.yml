@@ -1,5 +1,7 @@
 AllCops:
   NewCops: disable
+  Exclude:
+  - lib/*/yard_ext/**.rb
 Bundler/OrderedGems:
   Enabled: false
 Gemspec/OrderedDependencies:
