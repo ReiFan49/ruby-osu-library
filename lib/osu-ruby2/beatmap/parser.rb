@@ -5,6 +5,7 @@ module OsuRuby
       about to use "Parser" as well, but namespace hell
       won\'t be fun so nope.
     '
+    # parser assistant for beatmaps
     module ParseHelper
       # defines generic comma split entries
       CommaSplitSection = Parser::Section.create(Parser::CommaSplitEntry)
