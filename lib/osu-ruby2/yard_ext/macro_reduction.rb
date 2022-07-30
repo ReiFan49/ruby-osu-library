@@ -2,4 +2,4 @@ module OsuRuby::YARDExt
   class MacroReduction < YARD::Handlers::Ruby::Base
     
   end
-end
+end if defined?(YARD)

@@ -76,6 +76,7 @@ module OsuRuby
       LATEST_FILE_VERSION = 14
       
       def initialize
+        @version  = LATEST_FILE_VERSION
         @sections = {}
         @timings  = []
         @objects  = []
@@ -93,16 +94,30 @@ module OsuRuby
         @timings.map! do |t| t.dup end
         @objects.map! do |o|
           o2 = o.dup
-          o2.instance_variable_set(:@beatmap,self)
+          o2.instance_variable_set :@beatmap, self
         end
       end
+      # wipe beatmap internal data.
+      # @return [void]
+      def clear_contents
+        @sections.clear
+        @timings.clear
+        @objects.clear
+      end
       public
+      def update_contents(parser_data)
+      end
       # reset beatmap cache and process the extensions defined
       # @param mode [Symbol, nil] TBD
       # @return [void]
-      def clear(mode = :nil)
-        reset_caches
-        process_extensions
+      def clear(mode = nil)
+        if %i(internal).include? mode then
+          clear_contents
+        end
+        clear_caches
+        unless %i(internal).include? mode then
+          process_extensions
+        end
       end
       # Clear existing caches stored in a beatmap. Currently it supports following operations:
       #

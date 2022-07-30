@@ -98,4 +98,5 @@ module OsuRuby
 end
 require 'osu-ruby2/version'
 require 'osu-ruby2/constants'
+require 'osu-ruby2/interface'
 require 'osu-ruby2/yard_ext'
