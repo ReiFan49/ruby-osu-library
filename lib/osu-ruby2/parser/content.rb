@@ -55,6 +55,8 @@ module OsuRuby
           super
           cls.instance_exec do
             def determine(str)
+              return RawEntry.new(str) if str.empty?
+              return CommentEntry.new(str) if self != CommentEntry && str.start_with?('//')
               new(str)
             end
             def register_checker(cls)

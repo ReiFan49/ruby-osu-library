@@ -69,6 +69,8 @@ module OsuRuby
           end
         end
       end
+      # defines non parsing section parser
+      RawCommaSection = CommaSplitSection.create(CommaSplitRawEntry)
       # defines +TimingPoints+ section parser.
       TimingPointSection = CommaSplitSection.create(TimingPointEntry)
       # defines +HitObject+ section parser.
@@ -104,6 +106,8 @@ module OsuRuby
       end
       def determine_sections(name, contents)
         case name
+        when 'Events'
+          ParseHelper::RawCommaSection.new name, contents.join($/)
         when 'TimingPoints'
           ParseHelper::CommaSplitSection.new name, contents.join($/)
         when 'HitObjects'
